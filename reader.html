@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ePub Reader Pro</title>
+    
+    <script src="jszip.min.js"></script>
+    <script src="epub.min.js"></script>
+
+    <style>
+        /* CSS DEFAULT (MODE TERANG) */
+        body { 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            font-family: sans-serif; 
+            background-color: #f4f4f4;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .toolbar { 
+            padding: 10px 20px; 
+            background: #fff; 
+            border-bottom: 1px solid #ccc;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            height: 50px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .btn-group button {
+            margin-left: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background: #fff;
+            border-radius: 4px;
+        }
+
+        .btn-group button:hover { background: #eee; }
+
+        /* AREA BACA */
+        #viewer { 
+            flex: 1;           
+            width: 100%;       
+            background-color: white; 
+            margin: 0 auto;    
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* TOMBOL NAVIGASI KANAN KIRI */
+        .nav-btn { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%);
+            padding: 20px; 
+            background: rgba(0,0,0,0.1); 
+            border: none; 
+            cursor: pointer; 
+            font-size: 30px; 
+            z-index: 99;
+            color: #555;
+            transition: 0.3s;
+        }
+        .nav-btn:hover { background: rgba(0,0,0,0.4); color: white; }
+        #prev { left: 0; }
+        #next { right: 0; }
+
+        /* --- CSS DARK MODE (UNTUK UI LUAR) --- */
+        body.dark-mode { background-color: #222; color: #ddd; }
+        body.dark-mode .toolbar { background-color: #333; border-bottom: 1px solid #444; color: #fff; }
+        body.dark-mode .btn-group button { background-color: #444; color: #fff; border-color: #555; }
+        body.dark-mode .btn-group button:hover { background-color: #555; }
+        body.dark-mode #viewer { background-color: #222; } /* Background area baca */
+    </style>
+</head>
+<body>
+
+    <div class="toolbar">
+        <button onclick="window.location.href='dashboard.html'" style="padding: 8px;">&larr; Kembali</button>
+        
+        <strong id="titleDisplay" style="font-size: 14px; overflow: hidden; white-space: nowrap; max-width: 300px;">Memuat...</strong>
+        
+        <div class="btn-group">
+            <button onclick="saveBookmark()" title="Simpan Halaman">🔖 Simpan</button>
+            <button onclick="loadBookmark()" title="Buka Bookmark">📂 Buka</button>
+            <button onclick="toggleTheme()" id="themeBtn">🌙 Mode Gelap</button>
+        </div>
+    </div>
+
+    <div id="viewer"></div>
+    
+    <button id="prev" class="nav-btn">❮</button>
+    <button id="next" class="nav-btn">❯</button>
+
+    <script>
+        // 1. CEK LIBRARY
+        if (typeof JSZip === 'undefined' || typeof ePub === 'undefined') {
+            alert("Error: Library jszip.min.js atau epub.min.js tidak ditemukan!");
+            throw new Error("Library Missing");
+        }
+
+        // 2. SETUP PATH
+        let bookPath = localStorage.getItem('currentBook');
+        if (!bookPath) window.location.href = 'dashboard.html';
+        bookPath = bookPath.replace(/\\/g, "/"); // Fix Windows Path
+
+        // Variable Global
+        var book = ePub(bookPath);
+        var rendition = book.renderTo("viewer", { width: "100%", height: "100%", flow: "paginated" });
+        var isDarkMode = false;
+        
+        // Key unik untuk simpan bookmark per buku
+        const bookmarkKey = 'bookmark_' + bookPath; 
+
+        // 3. RENDER AWAL
+        try {
+            var displayed = rendition.display();
+
+            // --- SETTING TEMA (DARK/LIGHT) ---
+            // Kita daftarkan CSS khusus untuk disuntikkan ke dalam buku
+            rendition.themes.register("dark", { 
+                body: { color: "#cfcfcf", background: "#222" },
+                p: { color: "#cfcfcf" },
+                h1: { color: "#fff" }, h2: { color: "#fff" }, span: { color: "#cfcfcf" }
+            });
+
+            rendition.themes.register("light", { 
+                body: { color: "#000", background: "#fff" } 
+            });
+
+            // --- LOAD METADATA ---
+            book.ready.then(() => {
+                return book.loaded.metadata;
+            }).then((meta) => {
+                document.getElementById('titleDisplay').innerText = meta.title;
+                // Cek apakah ada bookmark tersimpan sebelumnya? Kalau ada, tawarkan.
+                if(localStorage.getItem(bookmarkKey)) {
+                    // Opsional: Otomatis buka atau biarkan user klik tombol 'Buka'
+                    console.log("Ada bookmark tersimpan."); 
+                }
+            });
+
+            // --- NAVIGASI ---
+            document.getElementById("next").onclick = () => rendition.next();
+            document.getElementById("prev").onclick = () => rendition.prev();
+            document.addEventListener("keyup", (e) => {
+                if (e.key === "ArrowLeft") rendition.prev();
+                if (e.key === "ArrowRight") rendition.next();
+            });
+
+        } catch (e) {
+            alert("Gagal memuat buku: " + e.message);
+        }
+
+        // --- FUNGSI FITUR BARU ---
+
+        // 1. Toggle Mode Gelap/Terang
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const body = document.body;
+            const btn = document.getElementById('themeBtn');
+
+            if (isDarkMode) {
+                // Ubah UI Luar
+                body.classList.add('dark-mode');
+                btn.innerText = "☀️ Mode Terang";
+                // Ubah Isi Buku (Dalam Iframe)
+                rendition.themes.select("dark");
+            } else {
+                // Ubah UI Luar
+                body.classList.remove('dark-mode');
+                btn.innerText = "🌙 Mode Gelap";
+                // Ubah Isi Buku (Dalam Iframe)
+                rendition.themes.select("light");
+            }
+        }
+
+        // 2. Simpan Bookmark
+        function saveBookmark() {
+            // Ambil posisi saat ini (CFI)
+            const currentLocation = rendition.currentLocation();
+            if (currentLocation && currentLocation.start) {
+                const cfi = currentLocation.start.cfi;
+                localStorage.setItem(bookmarkKey, cfi);
+                alert("Halaman berhasil ditandai! 🔖");
+            }
+        }
+
+        // 3. Buka Bookmark
+        function loadBookmark() {
+            const savedCfi = localStorage.getItem(bookmarkKey);
+            if (savedCfi) {
+                rendition.display(savedCfi);
+                // alert("Menuju halaman yang ditandai...");
+            } else {
+                alert("Belum ada bookmark untuk buku ini.");
+            }
+        }
+    </script>
+</body>
+</html>
