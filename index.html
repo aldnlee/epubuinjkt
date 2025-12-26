@@ -4,56 +4,227 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Perpustakaan Digital</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f4f4; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 10px; width: 320px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { margin-top: 0; color: #333; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 16px; margin-top: 10px;}
-        button:hover { background: #0056b3; }
-        .hidden { display: none; }
-        p { margin-top: 20px; font-size: 14px; color: #666; }
-        a { color: #007bff; cursor: pointer; text-decoration: none; font-weight: bold; }
+        /* --- CSS MODERN --- */
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* Gradient Background */
+            margin: 0;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        h2 { margin-bottom: 5px; color: #1e3c72; }
+        p { margin-top: 0; font-size: 14px; color: #666; margin-bottom: 25px; }
+
+        /* Input Group untuk Password Eye Icon */
+        .input-group {
+            position: relative;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #1e3c72;
+            box-shadow: 0 0 5px rgba(30, 60, 114, 0.2);
+        }
+
+        /* Tombol Toggle Password */
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+            user-select: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #1e3c72;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        button:hover { background: #162d55; }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .toggle-link {
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        a { color: #1e3c72; cursor: pointer; text-decoration: none; font-weight: bold; }
         a:hover { text-decoration: underline; }
+
+        /* Utility Classes */
+        .hidden { display: none; }
+        .error-msg { color: red; font-size: 12px; margin-bottom: 10px; display: block; }
     </style>
 </head>
 <body>
 
-    <div class="box">
+    <div class="container">
         <div id="login-view">
-            <h2>Masuk</h2>
-            <p>Silakan login untuk mengakses perpustakaan.</p>
-            <input type="text" id="loginUser" placeholder="Username">
-            <input type="password" id="loginPass" placeholder="Password">
-            <button onclick="handleLogin()">Masuk</button>
-            <p>Belum punya akun? <a onclick="switchView()">Daftar disini</a></p>
+            <h2>Selamat Datang</h2>
+            <p>Akses koleksi buku digital kami</p>
+            
+            <div class="input-group">
+                <input type="text" id="loginUser" placeholder="Username / NIM">
+            </div>
+            
+            <div class="input-group">
+                <input type="password" id="loginPass" placeholder="Password">
+                <span class="toggle-password" onclick="togglePassword('loginPass')">Show</span>
+            </div>
+
+            <span id="loginError" class="error-msg"></span>
+            
+            <button id="btnLogin" onclick="handleLogin()">Masuk</button>
+            
+            <div class="toggle-link">
+                Belum punya akun? <a onclick="switchView()">Daftar Sekarang</a>
+            </div>
         </div>
 
         <div id="register-view" class="hidden">
-            <h2>Daftar Baru</h2>
-            <p>Buat akun untuk mulai membaca.</p>
-            <input type="text" id="regUser" placeholder="Username Baru">
-            <input type="password" id="regPass" placeholder="Password Baru">
-            <button onclick="handleRegister()">Daftar</button>
-            <p>Sudah punya akun? <a onclick="switchView()">Login disini</a></p>
+            <h2>Buat Akun</h2>
+            <p>Bergabunglah dengan perpustakaan</p>
+            
+            <div class="input-group">
+                <input type="text" id="regUser" placeholder="Username Baru">
+            </div>
+            
+            <div class="input-group">
+                <input type="password" id="regPass" placeholder="Password Baru">
+                <span class="toggle-password" onclick="togglePassword('regPass')">Show</span>
+            </div>
+
+            <button id="btnRegister" onclick="handleRegister()">Daftar Akun</button>
+            
+            <div class="toggle-link">
+                Sudah punya akun? <a onclick="switchView()">Login Disini</a>
+            </div>
         </div>
     </div>
 
     <script>
-        // Logika Ganti Tampilan
+        // --- UI LOGIC ---
+
         function switchView() {
             document.getElementById('login-view').classList.toggle('hidden');
             document.getElementById('register-view').classList.toggle('hidden');
+            // Reset error messages saat pindah view
+            document.getElementById('loginError').innerText = '';
         }
 
-        // --- FUNGSI API (FETCH) ---
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+        }
 
-        // 1. REGISTER
+        function setLoading(isLoading, btnId) {
+            const btn = document.getElementById(btnId);
+            if (isLoading) {
+                btn.disabled = true;
+                btn.innerText = "Memproses...";
+            } else {
+                btn.disabled = false;
+                btn.innerText = btnId === 'btnLogin' ? "Masuk" : "Daftar Akun";
+            }
+        }
+
+        // --- API LOGIC ---
+
+        async function handleLogin() {
+            const username = document.getElementById('loginUser').value;
+            const password = document.getElementById('loginPass').value;
+            const errorMsg = document.getElementById('loginError');
+
+            if(!username || !password) {
+                errorMsg.innerText = "Harap isi username dan password!";
+                return;
+            }
+
+            setLoading(true, 'btnLogin'); // Set loading state
+
+            try {
+                // Simulasi fetch (Ganti URL ini dengan API Laravel/Node kamu nanti)
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    localStorage.setItem('user', username);
+                    window.location.href = 'dashboard.html';
+                } else {
+                    errorMsg.innerText = result.message || "Login gagal, periksa kredensial.";
+                }
+
+            } catch (error) {
+                console.error(error);
+                // Fallback untuk testing jika API belum siap
+                errorMsg.innerText = "Gagal terhubung ke server.";
+                
+                // UNTUK TESTING SAJA (Bisa dihapus nanti):
+                // Jika server mati, kita anggap login sukses biar kamu bisa liat alurnya
+                // localStorage.setItem('user', username);
+                // window.location.href = 'dashboard.html';
+
+            } finally {
+                setLoading(false, 'btnLogin'); // Matikan loading state
+            }
+        }
+
         async function handleRegister() {
             const username = document.getElementById('regUser').value;
             const password = document.getElementById('regPass').value;
-
+            
             if(!username || !password) return alert("Harap isi semua kolom!");
+
+            setLoading(true, 'btnRegister');
 
             try {
                 const response = await fetch('/api/register', {
@@ -63,44 +234,18 @@
                 });
 
                 const result = await response.json();
-                alert(result.message);
                 
-                if(result.success) switchView(); // Pindah ke login kalau sukses
-            } catch (error) {
-                console.error(error);
-                alert("Terjadi kesalahan koneksi server");
-            }
-        }
-
-        // 2. LOGIN (UPDATE PENTING DISINI)
-        async function handleLogin() {
-            const username = document.getElementById('loginUser').value;
-            const password = document.getElementById('loginPass').value;
-
-            if(!username || !password) return alert("Harap isi semua kolom!");
-
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-
-                const result = await response.json();
-                alert(result.message);
-
-                // --- LOGIKA BARU: REDIRECT KE DASHBOARD ---
-                if (result.success) {
-                    // Simpan siapa yang login agar dashboard tahu
-                    localStorage.setItem('user', username);
-                    
-                    // Pindah halaman ke dashboard
-                    window.location.href = 'dashboard.html';
+                if(result.success) {
+                    alert("Registrasi Berhasil! Silakan login.");
+                    switchView();
+                } else {
+                    alert(result.message || "Registrasi gagal.");
                 }
-
             } catch (error) {
                 console.error(error);
                 alert("Terjadi kesalahan koneksi server");
+            } finally {
+                setLoading(false, 'btnRegister');
             }
         }
     </script>

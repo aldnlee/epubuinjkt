@@ -4,44 +4,200 @@
     <meta charset="UTF-8">
     <title>ePub Library UIN</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; padding-bottom: 10px;}
-        .card { border: 1px solid #ccc; padding: 15px; margin: 10px 0; border-radius: 5px; display: flex; justify-content: space-between; }
-        .upload-section { background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        button { cursor: pointer; padding: 5px 10px; }
+        /* --- CSS VARIABLES (Agar mudah ganti tema) --- */
+        :root {
+            --bg-body: #f4f6f9;
+            --bg-card: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border-color: #e0e0e0;
+            --input-bg: #ffffff;
+            --bookmark-bg: #f9fff9;
+            --bookmark-hover: #e6ffe6;
+            --shadow-color: rgba(0,0,0,0.05);
+        }
+
+        /* Konfigurasi Dark Mode */
+        body.dark-mode {
+            --bg-body: #121212;
+            --bg-card: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #aaaaaa;
+            --border-color: #333333;
+            --input-bg: #2c2c2c;
+            --bookmark-bg: #0f2912; /* Hijau tua gelap */
+            --bookmark-hover: #143618;
+            --shadow-color: rgba(0,0,0,0.5);
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 20px; 
+            max-width: 1200px; 
+            margin: auto; 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        /* Header */
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: var(--bg-card); 
+            padding: 15px 20px; border-radius: 8px; 
+            box-shadow: 0 2px 5px var(--shadow-color); 
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .header h2 { margin: 0; color: #007bff; }
+
+        /* Layout Grid */
+        .container-grid { display: grid; grid-template-columns: 3fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .container-grid { grid-template-columns: 1fr; } }
+
+        /* Card Styles */
+        .card { 
+            border: 1px solid var(--border-color); 
+            padding: 15px; margin-bottom: 15px; border-radius: 8px; 
+            background: var(--bg-card); 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+            transition: transform 0.2s; 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px var(--shadow-color); }
+        
+        .upload-section { 
+            background: var(--bg-card); 
+            padding: 20px; border-radius: 8px; margin-bottom: 20px; 
+            box-shadow: 0 2px 5px var(--shadow-color); 
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sidebar Styles */
+        .sidebar { 
+            background: var(--bg-card); 
+            padding: 20px; border-radius: 8px; height: fit-content; 
+            box-shadow: 0 2px 5px var(--shadow-color);
+            border: 1px solid var(--border-color); 
+        }
+        
+        .bookmark-item { 
+            border-left: 4px solid #28a745; 
+            background: var(--bookmark-bg); 
+            padding: 10px; margin-bottom: 10px; border-radius: 4px; 
+            font-size: 0.9em; cursor: pointer; transition: 0.2s; 
+        }
+        .bookmark-item:hover { background: var(--bookmark-hover); }
+        
+        .bookmark-title { font-weight: bold; display: block; margin-bottom: 4px; }
+        .bookmark-info { font-size: 0.8em; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
+        .page-badge { background: #28a745; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
+
+        /* Inputs & Buttons */
+        .filter-container { display: flex; gap: 10px; margin-bottom: 20px; }
+        
+        input, select { 
+            padding: 10px; border-radius: 5px; 
+            border: 1px solid var(--border-color); 
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            outline: none; 
+        }
+        
+        button { padding: 10px; border-radius: 5px; cursor: pointer; background: #007bff; color: white; border: none; font-weight: bold; transition: 0.2s; }
+        button:hover { background: #0056b3; }
+        button.logout { background: #dc3545; }
+        button.logout:hover { background: #a71d2a; }
+        
+        /* Tombol Theme */
+        #themeBtn { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); font-size: 1.2em; padding: 8px 12px; margin-right: 10px; }
+        #themeBtn:hover { background: var(--border-color); }
+
+        h3 { margin-top: 0; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; color: var(--text-main); }
     </style>
 </head>
 <body>
+
     <div class="header">
-        <h2>Perpustakaan Digital FST</h2>
-        <button onclick="logout()">Logout</button>
+        <h2>📚 Perpustakaan Digital FST</h2>
+        <div style="display: flex; align-items: center;">
+            <span id="welcomeUser" style="margin-right: 15px; font-weight: bold; color: var(--text-muted);"></span>
+            
+            <button onclick="toggleTheme()" id="themeBtn" title="Ganti Tema">🌙</button>
+            
+            <button onclick="logout()" class="logout">Logout</button>
+        </div>
     </div>
 
-    <div class="upload-section">
-        <h3>Upload ePub Baru</h3>
-        <input type="text" id="bookTitle" placeholder="Judul Buku" style="width: 100%; margin-bottom: 10px;">
-        <select id="bookCategory" style="width: 100%; margin-bottom: 10px;">
-            <option value="Informatika">Teknik Informatika</option>
-            <option value="Sistem Informasi">Sistem Informasi</option>
-            <option value="Biologi">Biologi</option>
-            <option value="Matematika">Matematika</option>
-        </select>
-        <input type="file" id="fileInput" accept=".epub">
-        <button onclick="uploadBook()" style="margin-top: 10px;">Upload</button>
-    </div>
+    <div class="container-grid">
+        
+        <div class="main-content">
+            
+            <div class="upload-section">
+                <h3>📤 Upload ePub Baru</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="bookTitle" placeholder="Judul Buku" style="flex: 2;">
+                    <select id="bookCategory" style="flex: 1;">
+                        <option value="Informatika">Teknik Informatika</option>
+                        <option value="Sistem Informasi">Sistem Informasi</option>
+                        <option value="Biologi">Biologi</option>
+                        <option value="Matematika">Matematika</option>
+                    </select>
+                </div>
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <input type="file" id="fileInput" accept=".epub">
+                    <button onclick="uploadBook()">Upload Buku</button>
+                </div>
+            </div>
 
-    <h3>Daftar Buku</h3>
-    <select id="filterCategory" onchange="loadBooks()">
-        <option value="All">Semua Prodi</option>
-        <option value="Informatika">Teknik Informatika</option>
-        <option value="Sistem Informasi">Sistem Informasi</option>
-    </select>
-    <div id="bookList"></div>
+            <h3>📖 Daftar Koleksi Buku</h3>
+            <div class="filter-container">
+                <select id="filterCategory" onchange="loadBooks()" style="flex: 1;">
+                    <option value="All">Semua Prodi</option>
+                    <option value="Informatika">Teknik Informatika</option>
+                    <option value="Sistem Informasi">Sistem Informasi</option>
+                </select>
+                <input type="text" id="searchBook" onkeyup="loadBooks()" placeholder="Cari judul buku..." style="flex: 2;">
+            </div>
+
+            <div id="bookList"></div>
+        </div>
+
+        <div class="sidebar">
+            <h3>📌 Terakhir Dibaca</h3>
+            <div id="bookmarkList">
+                <p style="color: var(--text-muted); font-size: 0.9em; text-align: center;">Belum ada riwayat baca.</p>
+            </div>
+        </div>
+
+    </div>
 
     <script>
         const currentUser = localStorage.getItem('user');
-        if(!currentUser) window.location.href = 'index.html'; // Proteksi halaman
+        if(!currentUser) window.location.href = 'index.html';
+        document.getElementById('welcomeUser').innerText = `Hai, ${currentUser}`;
 
+        let allBooksData = [];
+
+        // --- 1. LOGIKA DARK MODE ---
+        // Cek apakah user pernah simpan preferensi sebelumnya
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('themeBtn').innerText = "☀️";
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            
+            // Ubah Icon
+            document.getElementById('themeBtn').innerText = isDark ? "☀️" : "🌙";
+            
+            // Simpan ke memori browser
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        // --- 2. FUNGSI UPLOAD & FETCH ---
         async function uploadBook() {
             const title = document.getElementById('bookTitle').value;
             const category = document.getElementById('bookCategory').value;
@@ -55,39 +211,98 @@
             formData.append('category', category);
             formData.append('uploader', currentUser);
 
-            const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            const data = await res.json();
-            alert(data.message);
-            loadBooks();
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                alert(data.message);
+                fetchBooks();
+                document.getElementById('bookTitle').value = ''; 
+                document.getElementById('fileInput').value = '';
+            } catch (err) {
+                console.error(err);
+                alert("Gagal upload");
+            }
         }
 
-        async function loadBooks() {
-            const filter = document.getElementById('filterCategory').value;
-            const res = await fetch('/api/books');
-            const books = await res.json();
-            
+        async function fetchBooks() {
+            try {
+                const res = await fetch('/api/books'); 
+                allBooksData = await res.json();
+                loadBooks();
+            } catch (err) {
+                console.error("Gagal mengambil data buku", err);
+            }
+        }
+
+        function loadBooks() {
+            const filterCat = document.getElementById('filterCategory').value;
+            const searchQuery = document.getElementById('searchBook').value.toLowerCase();
             const listDiv = document.getElementById('bookList');
+            
             listDiv.innerHTML = '';
 
-            books.forEach(book => {
-                if(filter === 'All' || book.category === filter) {
-                    listDiv.innerHTML += `
-                        <div class="card">
-                            <div>
-                                <strong>${book.title}</strong> <br>
-                                <small>Prodi: ${book.category} | Upload: ${book.uploader}</small>
-                            </div>
-                            <button onclick="bacaBuku('${book.filepath}')">BACA SEKARANG</button>
+            const filteredBooks = allBooksData.filter(book => {
+                const matchCategory = filterCat === 'All' || book.category === filterCat;
+                const matchTitle = book.title.toLowerCase().includes(searchQuery);
+                return matchCategory && matchTitle;
+            });
+
+            if (filteredBooks.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center; color: var(--text-muted); padding:20px;">Tidak ada buku ditemukan.</p>';
+                return;
+            }
+
+            filteredBooks.forEach(book => {
+                listDiv.innerHTML += `
+                    <div class="card">
+                        <div>
+                            <strong style="font-size: 1.1em;">${book.title}</strong> <br>
+                            <span style="color: var(--text-muted); font-size: 0.85em; display:block; margin-top:5px;">
+                                🏷️ ${book.category} | 👤 ${book.uploader}
+                            </span>
                         </div>
-                    `;
-                }
+                        <button onclick="bacaBuku('${book.filepath}', '${book.title}')">📖 BACA</button>
+                    </div>
+                `;
             });
         }
 
-        function bacaBuku(path) {
-            // Simpan path buku yg mau dibaca ke localStorage agar bisa diambil di halaman reader
+        function bacaBuku(path, title) {
             localStorage.setItem('currentBook', path);
+            localStorage.setItem('currentBookTitle', title); 
+            localStorage.removeItem('resumeCFI'); 
             window.location.href = 'reader.html';
+        }
+
+        function lanjutBaca(path, cfi) {
+            localStorage.setItem('currentBook', path);
+            localStorage.setItem('resumeCFI', cfi);
+            window.location.href = 'reader.html';
+        }
+
+        // --- 3. RENDER BOOKMARK ---
+        function loadBookmarks() {
+            const bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+            const container = document.getElementById('bookmarkList');
+
+            if (bookmarks.length === 0) return; 
+
+            container.innerHTML = ''; 
+
+            bookmarks.reverse().forEach(bm => {
+                const displayTitle = bm.title.length > 25 ? bm.title.substring(0, 25) + '...' : bm.title;
+                const pageInfo = bm.pageLabel ? `<span class="page-badge">${bm.pageLabel}</span>` : '';
+
+                container.innerHTML += `
+                    <div class="bookmark-item" onclick="lanjutBaca('${bm.filepath}', '${bm.cfi}')">
+                        <span class="bookmark-title">${displayTitle}</span>
+                        <div class="bookmark-info">
+                            <span>📅 ${bm.timestamp.split(' ')[0]}</span>
+                            ${pageInfo}
+                        </div>
+                    </div>
+                `;
+            });
         }
 
         function logout() {
@@ -95,7 +310,8 @@
             window.location.href = 'index.html';
         }
 
-        loadBooks(); // Load awal
+        fetchBooks();
+        loadBookmarks(); 
     </script>
 </body>
 </html>

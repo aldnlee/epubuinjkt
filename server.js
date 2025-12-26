@@ -1,118 +1,104 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const cors = require('cors');
 const bodyParser = require('body-parser');
-const fs = require('fs'); 
-const multer = require('multer'); 
-const path = require('path');     
-const app = express();
 
-// UPDATE PENTING: Gunakan PORT dari sistem Cloud (Render/Glitch)
-// Jika tidak ada (di laptop), pakai port 3000
-const PORT = process.env.PORT || 3000;
+const app = express();
+const PORT = 3000;
 
 // Middleware
+app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(__dirname)); 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(__dirname)); // Menyajikan file HTML/CSS/JS di folder ini
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Menyajikan file buku
 
-// KONFIGURASI MULTER (UPLOAD FILE)
+// --- DATABASE SIMULATION ---
+const BOOKS_FILE = path.join(__dirname, 'books.json');
+const HIGHLIGHT_FILE = path.join(__dirname, 'highlight.json');
+
+// Pastikan file JSON ada
+if (!fs.existsSync(BOOKS_FILE)) fs.writeFileSync(BOOKS_FILE, '[]');
+if (!fs.existsSync(HIGHLIGHT_FILE)) fs.writeFileSync(HIGHLIGHT_FILE, '{}');
+
+// Konfigurasi Upload Multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dir = './uploads';
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir);
-        }
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
         cb(null, dir);
     },
     filename: (req, file, cb) => {
-        // Nama file: waktu-namaasli.epub
         cb(null, Date.now() + '-' + file.originalname);
     }
 });
 const upload = multer({ storage: storage });
 
-// DEFINISI FILE DATABASE
-const USERS_DB = 'users.json';
-const BOOKS_DB = 'books.json'; 
+// --- API ENDPOINTS ---
 
-// FUNGSI BANTUAN DATABASE
-const loadData = (filename) => {
-    if (fs.existsSync(filename)) {
-        const dataBuffer = fs.readFileSync(filename);
-        return JSON.parse(dataBuffer);
-    }
-    return [];
-};
-
-const saveData = (filename, data) => {
-    fs.writeFileSync(filename, JSON.stringify(data, null, 2));
-};
-
-// ================= ROUTES =================
-
-// 1. REGISTER
-app.post('/api/register', (req, res) => {
-    const { username, password } = req.body;
-    let users = loadData(USERS_DB);
-
-    if (users.find(u => u.username === username)) {
-        return res.json({ success: false, message: 'Username sudah dipakai!' });
-    }
-
-    users.push({ username, password });
-    saveData(USERS_DB, users); 
-    
-    console.log(`User baru terdaftar: ${username}`);
-    res.json({ success: true, message: 'Registrasi Berhasil!' });
-});
-
-// 2. LOGIN
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    let users = loadData(USERS_DB);
-
-    const user = users.find(u => u.username === username && u.password === password);
-
-    if (user) {
-        res.json({ success: true, message: `Selamat datang, ${username}!` });
-    } else {
-        res.json({ success: false, message: 'Username atau Password salah!' });
-    }
-});
-
-// 3. UPLOAD BUKU
+// 1. Upload Buku
 app.post('/api/upload', upload.single('epubFile'), (req, res) => {
-    const { title, category, uploader } = req.body;
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
-    if(!req.file) {
-        return res.json({ success: false, message: 'File tidak boleh kosong' });
-    }
-
-    const filename = req.file.filename;
-    let books = loadData(BOOKS_DB);
-    
     const newBook = {
         id: Date.now(),
-        title: title,
-        category: category,
-        uploader: uploader,
-        filepath: '/uploads/' + filename, 
+        title: req.body.title,
+        category: req.body.category,
+        uploader: req.body.uploader,
+        filepath: 'uploads/' + req.file.filename,
         uploadedAt: new Date().toISOString()
     };
 
+    const books = JSON.parse(fs.readFileSync(BOOKS_FILE));
     books.push(newBook);
-    saveData(BOOKS_DB, books);
+    fs.writeFileSync(BOOKS_FILE, JSON.stringify(books, null, 2));
 
-    console.log(`Buku baru diupload: ${title}`);
-    res.json({ success: true, message: 'Buku berhasil diupload!' });
+    res.json({ message: "Buku berhasil diupload!", book: newBook });
 });
 
-// 4. LIHAT DAFTAR BUKU
+// 2. Ambil Daftar Buku
 app.get('/api/books', (req, res) => {
-    const books = loadData(BOOKS_DB);
+    const books = JSON.parse(fs.readFileSync(BOOKS_FILE));
     res.json(books);
 });
 
-// UPDATE PENTING: Tambahkan '0.0.0.0' agar bisa diakses publik
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server berjalan di port ${PORT}`);
+// 3. AMBIL HIGHLIGHT (GET)
+app.get('/api/highlights', (req, res) => {
+    const { user, bookPath } = req.query;
+    
+    try {
+        const data = JSON.parse(fs.readFileSync(HIGHLIGHT_FILE, 'utf8'));
+        // Kunci: gabungan username + path buku
+        const key = `${user}|${bookPath}`;
+        res.json(data[key] || []);
+    } catch (err) {
+        console.error(err);
+        res.json([]);
+    }
+});
+
+// 4. SIMPAN HIGHLIGHT (POST)
+app.post('/api/highlights', (req, res) => {
+    const { user, bookPath, highlights } = req.body;
+
+    try {
+        let data = JSON.parse(fs.readFileSync(HIGHLIGHT_FILE, 'utf8'));
+        const key = `${user}|${bookPath}`;
+        
+        // Update data
+        data[key] = highlights;
+
+        fs.writeFileSync(HIGHLIGHT_FILE, JSON.stringify(data, null, 2));
+        res.json({ success: true, message: "Highlight tersimpan di server" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Gagal menyimpan" });
+    }
+});
+
+// Jalankan Server
+app.listen(PORT, () => {
+    console.log(`Server berjalan di http://localhost:${PORT}`);
+    console.log(`Buka dashboard di http://localhost:${PORT}/dashboard.html`);
 });
