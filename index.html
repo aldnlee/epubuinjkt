@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -250,4 +251,113 @@
         }
     </script>
 </body>
+=======
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Perpustakaan Digital</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f4f4f4; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 10px; width: 320px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; color: #333; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 16px; margin-top: 10px;}
+        button:hover { background: #0056b3; }
+        .hidden { display: none; }
+        p { margin-top: 20px; font-size: 14px; color: #666; }
+        a { color: #007bff; cursor: pointer; text-decoration: none; font-weight: bold; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <div id="login-view">
+            <h2>Masuk</h2>
+            <p>Silakan login untuk mengakses perpustakaan.</p>
+            <input type="text" id="loginUser" placeholder="Username">
+            <input type="password" id="loginPass" placeholder="Password">
+            <button onclick="handleLogin()">Masuk</button>
+            <p>Belum punya akun? <a onclick="switchView()">Daftar disini</a></p>
+        </div>
+
+        <div id="register-view" class="hidden">
+            <h2>Daftar Baru</h2>
+            <p>Buat akun untuk mulai membaca.</p>
+            <input type="text" id="regUser" placeholder="Username Baru">
+            <input type="password" id="regPass" placeholder="Password Baru">
+            <button onclick="handleRegister()">Daftar</button>
+            <p>Sudah punya akun? <a onclick="switchView()">Login disini</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Logika Ganti Tampilan
+        function switchView() {
+            document.getElementById('login-view').classList.toggle('hidden');
+            document.getElementById('register-view').classList.toggle('hidden');
+        }
+
+        // --- FUNGSI API (FETCH) ---
+
+        // 1. REGISTER
+        async function handleRegister() {
+            const username = document.getElementById('regUser').value;
+            const password = document.getElementById('regPass').value;
+
+            if(!username || !password) return alert("Harap isi semua kolom!");
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+                alert(result.message);
+                
+                if(result.success) switchView(); // Pindah ke login kalau sukses
+            } catch (error) {
+                console.error(error);
+                alert("Terjadi kesalahan koneksi server");
+            }
+        }
+
+        // 2. LOGIN (UPDATE PENTING DISINI)
+        async function handleLogin() {
+            const username = document.getElementById('loginUser').value;
+            const password = document.getElementById('loginPass').value;
+
+            if(!username || !password) return alert("Harap isi semua kolom!");
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+                alert(result.message);
+
+                // --- LOGIKA BARU: REDIRECT KE DASHBOARD ---
+                if (result.success) {
+                    // Simpan siapa yang login agar dashboard tahu
+                    localStorage.setItem('user', username);
+                    
+                    // Pindah halaman ke dashboard
+                    window.location.href = 'dashboard.html';
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Terjadi kesalahan koneksi server");
+            }
+        }
+    </script>
+</body>
+>>>>>>> c6b4a21116933a12257c65d8798e4ea85ea83aee
 </html>
