@@ -11,16 +11,18 @@ const PORT = 3000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(__dirname)); // Menyajikan file HTML/CSS/JS di folder ini
+app.use(express.static(__dirname)); // Menyajikan file HTML/CSS/JS
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Menyajikan file buku
 
 // --- DATABASE SIMULATION ---
 const BOOKS_FILE = path.join(__dirname, 'books.json');
 const HIGHLIGHT_FILE = path.join(__dirname, 'highlight.json');
+const USERS_FILE = path.join(__dirname, 'users.json'); // <--- INI DITAMBAHKAN (Database User)
 
 // Pastikan file JSON ada
 if (!fs.existsSync(BOOKS_FILE)) fs.writeFileSync(BOOKS_FILE, '[]');
 if (!fs.existsSync(HIGHLIGHT_FILE)) fs.writeFileSync(HIGHLIGHT_FILE, '{}');
+if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '[]'); // <--- BUAT FILE USER
 
 // Konfigurasi Upload Multer
 const storage = multer.diskStorage({
@@ -35,9 +37,49 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// --- API ENDPOINTS ---
+// ==========================================
+//  1. API LOGIN & REGISTER (INI YANG KURANG TADI)
+// ==========================================
 
-// 1. Upload Buku
+// REGISTER
+app.post('/api/register', (req, res) => {
+    const { username, password } = req.body;
+    
+    const users = JSON.parse(fs.readFileSync(USERS_FILE));
+
+    // Cek duplikat
+    const existingUser = users.find(u => u.username === username);
+    if (existingUser) {
+        return res.status(400).json({ success: false, message: "Username sudah dipakai!" });
+    }
+
+    users.push({ username, password });
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+
+    res.json({ success: true, message: "Registrasi berhasil! Silakan login." });
+});
+
+// LOGIN
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+
+    const users = JSON.parse(fs.readFileSync(USERS_FILE));
+
+    // Cek cocok tidaknya
+    const user = users.find(u => u.username === username && u.password === password);
+
+    if (user) {
+        res.json({ success: true, message: "Login berhasil!" });
+    } else {
+        res.status(401).json({ success: false, message: "Username atau Password salah!" });
+    }
+});
+
+// ==========================================
+//  2. API UPLOAD & BUKU (KODE LAMA KAMU)
+// ==========================================
+
+// Upload Buku
 app.post('/api/upload', upload.single('epubFile'), (req, res) => {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
@@ -57,42 +99,38 @@ app.post('/api/upload', upload.single('epubFile'), (req, res) => {
     res.json({ message: "Buku berhasil diupload!", book: newBook });
 });
 
-// 2. Ambil Daftar Buku
+// Ambil Daftar Buku
 app.get('/api/books', (req, res) => {
     const books = JSON.parse(fs.readFileSync(BOOKS_FILE));
     res.json(books);
 });
 
-// 3. AMBIL HIGHLIGHT (GET)
+// ==========================================
+//  3. API HIGHLIGHT / STABILO
+// ==========================================
+
+// AMBIL HIGHLIGHT (GET)
 app.get('/api/highlights', (req, res) => {
     const { user, bookPath } = req.query;
-    
     try {
         const data = JSON.parse(fs.readFileSync(HIGHLIGHT_FILE, 'utf8'));
-        // Kunci: gabungan username + path buku
         const key = `${user}|${bookPath}`;
         res.json(data[key] || []);
     } catch (err) {
-        console.error(err);
         res.json([]);
     }
 });
 
-// 4. SIMPAN HIGHLIGHT (POST)
+// SIMPAN HIGHLIGHT (POST)
 app.post('/api/highlights', (req, res) => {
     const { user, bookPath, highlights } = req.body;
-
     try {
         let data = JSON.parse(fs.readFileSync(HIGHLIGHT_FILE, 'utf8'));
         const key = `${user}|${bookPath}`;
-        
-        // Update data
-        data[key] = highlights;
-
+        data[key] = highlights; // Simpan data
         fs.writeFileSync(HIGHLIGHT_FILE, JSON.stringify(data, null, 2));
-        res.json({ success: true, message: "Highlight tersimpan di server" });
+        res.json({ success: true, message: "Highlight tersimpan" });
     } catch (err) {
-        console.error(err);
         res.status(500).json({ success: false, message: "Gagal menyimpan" });
     }
 });
@@ -100,5 +138,4 @@ app.post('/api/highlights', (req, res) => {
 // Jalankan Server
 app.listen(PORT, () => {
     console.log(`Server berjalan di http://localhost:${PORT}`);
-    console.log(`Buka dashboard di http://localhost:${PORT}/dashboard.html`);
 });
